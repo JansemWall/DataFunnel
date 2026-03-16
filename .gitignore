@@ -1,0 +1,121 @@
+# ------------------------------
+# Python: bytecode, cache, logs
+# ------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.so
+*.dylib
+*.dll
+
+# C extensions / build intermediates
+*.o
+*.obj
+*.a
+*.lib
+
+# Test, coverage and quality tools
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+.mypy_cache/
+.pyre/
+.ruff_cache/
+.hypothesis/
+.dmypy.json
+dmypy.json
+.cache/
+
+# Type checker / linters
+.pytype/
+
+# Logs
+*.log
+logs/
+
+# ------------------------------
+# Environments and dependencies
+# ------------------------------
+.venv/
+venv/
+env/
+ENV/
+.python-version
+pip-wheel-metadata/
+
+# Poetry / Pipenv
+poetry.lock
+Pipfile.lock
+
+# ------------------------------
+# Packaging / distribution
+# ------------------------------
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+wheels/
+share/python-wheels/
+
+# Installer artifacts
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ------------------------------
+# PyInstaller
+# ------------------------------
+# Keep app.spec versioned (do not ignore *.spec globally)
+*.manifest
+*.pkg
+*.pyz
+
+# ------------------------------
+# Jupyter / notebooks
+# ------------------------------
+.ipynb_checkpoints/
+
+# ------------------------------
+# IDE / Editor
+# ------------------------------
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.code-workspace
+
+# JetBrains
+*.iml
+
+# Vim / Emacs
+*.swp
+*.swo
+*~
+
+# ------------------------------
+# OS generated files
+# ------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# ------------------------------
+# Project-local runtime data
+# ------------------------------
+_dados_sistema/
+
+# Optional exports (if generated locally)
+*.xlsx
+*.xls
+*.csv
+
+# If you need to version sample datasets, comment the lines above
+# and add explicit allow-list paths below, e.g.:
+# !samples/
+# !samples/*.csv

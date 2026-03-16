@@ -1,40 +1,81 @@
 # ExcellKiller
 
-Aplicativo desktop em Python (CustomTkinter) para filtrar planilhas grandes com regras em funil e salvar o resultado em Excel.
+O ExcellKiller foi criado para acelerar a busca de informacoes em planilhas grandes, com uma operacao simples e foco em produtividade.
 
-## O que ele faz
+## Para que serve
 
-- Carrega base CSV, XLSX ou XLS
-- Permite criar multiplas regras de busca (AND entre regras)
-- Aceita lista de termos colada do Excel (virgula, ponto e virgula ou quebra de linha)
-- Processa arquivos em lotes para aguentar bases grandes
-- Salva historico das execucoes
-- Permite exportar novamente resultados antigos
-- Exibe botao de abrir planilha quando o arquivo exportado existe no disco
+- Encontrar rapidamente registros em arquivos CSV e Excel
+- Aplicar filtros por colunas e termos de busca
+- Reduzir trabalho manual de procurar linha por linha
+- Gerar planilhas finais prontas para compartilhamento
 
-## Tecnologias
+## Beneficios para sua equipe
+
+- Menos tempo gasto com consultas repetitivas
+- Mais padrao no processo de filtragem
+- Historico de pesquisas para reutilizacao
+- Reexportacao facil de resultados anteriores
+
+## Como usar (passo a passo)
+
+1. Abra o sistema.
+2. Selecione a base de dados (CSV, XLSX ou XLS).
+3. Informe as regras de busca:
+  - Colunas onde deseja procurar
+  - Termos que devem ser encontrados
+4. Clique em Pesquisar e Gerar Resultado.
+5. Escolha onde salvar o arquivo final em Excel.
+6. Consulte a aba Historico de Resultados para:
+  - Exportar novamente
+  - Abrir planilhas ja exportadas
+
+## Regras de busca
+
+- Voce pode adicionar varias regras na mesma pesquisa.
+- Os termos podem ser colados em bloco (com virgula, ponto e virgula ou quebra de linha).
+- O sistema aplica as regras em funil para chegar no resultado final.
+
+## Historico e rastreabilidade
+
+- Cada pesquisa fica registrada com data, base utilizada, regras aplicadas e quantidade de linhas encontradas.
+- Quando voce exporta novamente um resultado, o caminho do novo arquivo fica salvo no historico.
+- Se o arquivo for movido ou excluido, o botao Abrir Planilha deixa de aparecer automaticamente.
+
+## Requisitos
+
+- Sistema operacional Windows
+- Microsoft Excel ou aplicativo compativel para abrir arquivos .xlsx
+
+## Suporte
+
+Em caso de erro ou duvida de uso, compartilhe:
+
+- Captura de tela da mensagem apresentada
+- Passos realizados antes do erro
+- Nome do arquivo/base utilizada
+
+Com essas informacoes, o atendimento fica mais rapido e assertivo.
+
+---
+
+
+## Stack
 
 - Python 3.13+
 - CustomTkinter
 - Pandas
-- OpenPyXL (exportacao para .xlsx)
+- OpenPyXL
 
 ## Estrutura do projeto
 
-- `app.py`: aplicacao principal (UI + processamento)
-- `_dados_sistema/origens`: copias imutaveis das bases
-- `_dados_sistema/resultados`: resultados filtrados em CSV
-- `_dados_sistema/historico.json`: historico de buscas e exportacoes
-- `_dados_sistema/bases.json`: bases salvas para reutilizacao
+- app.py: aplicacao principal (interface + processamento)
+- app.spec: configuracao de build com PyInstaller
+- _dados_sistema/origens: copias imutaveis das bases importadas
+- _dados_sistema/resultados: resultados filtrados em CSV
+- _dados_sistema/historico.json: historico de execucoes e exportacoes
+- _dados_sistema/bases.json: mapeamento de bases salvas
 
-## Como rodar
-
-1. Criar ambiente virtual (se ainda nao existir)
-2. Ativar ambiente
-3. Instalar dependencias
-4. Executar o app
-
-### Windows (PowerShell)
+## Setup rapido (Windows / PowerShell)
 
 ```powershell
 python -m venv .venv
@@ -43,33 +84,13 @@ pip install customtkinter pandas openpyxl
 python app.py
 ```
 
-## Como usar
+## Notas de implementacao
 
-1. Selecione a base de dados
-2. Adicione uma ou mais regras de busca
-3. Clique em "Pesquisar e Gerar Resultado"
-4. Escolha onde salvar o Excel final
-5. Consulte a aba "Historico de Resultados" para reexportar ou abrir planilhas ja exportadas
+- Processamento em chunks para reduzir consumo de memoria em arquivos grandes.
+- Exportacao e reexportacao atualizam caminho de arquivo no historico.
+- Se a abertura da planilha falhar, o caminho salvo e limpo para ocultar automaticamente a opcao de abrir.
 
-## Regras de filtro
-
-- Cada bloco de regra representa um filtro
-- O resultado final respeita o encadeamento das regras (funil)
-- Em cada regra:
-  - Colunas: informe uma ou varias colunas separadas por virgula
-  - Termos: informe um ou varios termos separados por virgula, ponto e virgula ou quebra de linha
-
-## Observacoes importantes
-
-- Na primeira importacao de um arquivo externo, o sistema cria uma copia no cofre local (`_dados_sistema/origens`)
-- Para arquivos muito grandes, o processamento ocorre em chunks para reduzir consumo de memoria
-- Se um arquivo exportado for movido ou excluido, o botao "Abrir Planilha" deixa de aparecer para aquele registro
-
-## Build (opcional)
-
-Existe um `app.spec` no projeto para gerar executavel com PyInstaller.
-
-Exemplo:
+## Build executavel (opcional)
 
 ```powershell
 pip install pyinstaller
