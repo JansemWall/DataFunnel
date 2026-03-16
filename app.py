@@ -37,6 +37,8 @@ class BuscadorApp(ctk.CTk):
         self.caminho_base_ativa = ""
         self.is_base_no_cofre = False
         self.filtros_widgets = [] 
+        self.stop_event = threading.Event()
+        self.thread_processamento = None
         
         inicializar_sistema()
 
@@ -53,6 +55,7 @@ class BuscadorApp(ctk.CTk):
         self.configurar_aba_historico()
 
         self.tabview.configure(command=self.ao_mudar_aba)
+        self.protocol("WM_DELETE_WINDOW", self.ao_fechar_aplicacao)
 
     def configurar_aba_pesquisa(self):
         # --- 1. SELEÇÃO DE BASE DE DADOS (COM MEMÓRIA) ---
@@ -238,6 +241,10 @@ class BuscadorApp(ctk.CTk):
         if not self.caminho_base_ativa:
             messagebox.showwarning("Aviso", "Por favor, selecione ou carregue uma base de dados primeiro.")
             return
+
+        if self.thread_processamento and self.thread_processamento.is_alive():
+            messagebox.showinfo("Aviso", "Já existe um processamento em execução.")
+            return
         
         regras_validas = []
         for widget_set in self.filtros_widgets:
@@ -265,11 +272,19 @@ class BuscadorApp(ctk.CTk):
         self.barra_progresso.pack(pady=5)
         self.barra_progresso.start()
 
-        thread = threading.Thread(target=self.processar_dados_background, args=(regras_validas,))
-        thread.start()
+        self.stop_event.clear()
+        self.thread_processamento = threading.Thread(
+            target=self.processar_dados_background,
+            args=(regras_validas,),
+            daemon=True
+        )
+        self.thread_processamento.start()
 
     def processar_dados_background(self, regras_de_busca):
         try:
+            if self.stop_event.is_set():
+                return
+
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             data_hora_formatada = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             
@@ -305,12 +320,18 @@ class BuscadorApp(ctk.CTk):
                 iterador_csv = pd.read_csv(caminho_origem_imutavel, encoding='latin1', sep=';', chunksize=tamanho_lote, low_memory=False)
 
             for chunk in iterador_csv:
+                if self.stop_event.is_set():
+                    return
+
                 linhas_processadas += len(chunk)
                 self.label_status.configure(text=f"Aplicando funil de filtros... ({linhas_processadas} linhas)")
                 
                 chunk_filtrado = chunk 
                 
                 for regra in regras_de_busca:
+                    if self.stop_event.is_set():
+                        return
+
                     if chunk_filtrado.empty:
                         break 
                         
@@ -383,14 +404,25 @@ class BuscadorApp(ctk.CTk):
             self.label_status.configure(text="Concluído!", text_color="green")
             
             # Chama a função que transita a tela suavemente para o resultado
-            self.after(0, lambda: self.finalizar_sucesso_transicao(timestamp))
+            if self.winfo_exists():
+                self.after(0, lambda: self.finalizar_sucesso_transicao(timestamp))
 
         except Exception as e:
             self.label_status.configure(text="Erro!", text_color="red")
-            self.after(0, lambda e=e: messagebox.showerror("Erro de Processamento", f"Ocorreu um erro crítico:\n{str(e)}"))
+            if self.winfo_exists():
+                self.after(0, lambda e=e: messagebox.showerror("Erro de Processamento", f"Ocorreu um erro crítico:\n{str(e)}"))
         
         finally:
-            self.after(0, self.restaurar_interface)
+            if self.winfo_exists():
+                self.after(0, self.restaurar_interface)
+
+    def ao_fechar_aplicacao(self):
+        self.stop_event.set()
+
+        if self.thread_processamento and self.thread_processamento.is_alive():
+            self.thread_processamento.join(timeout=2)
+
+        self.destroy()
 
     def finalizar_sucesso_transicao(self, id_recente):
         self.restaurar_interface()
@@ -444,7 +476,7 @@ class BuscadorApp(ctk.CTk):
                                               command=lambda c=caminho_exp, rid=item['id']: self.abrir_planilha_os(c, rid))
                     btn_abrir.pack(side="left", padx=5)
 
-                btn_exportar = ctk.CTkButton(frame_botoes, text="💾 Exportar Novamente", width=130, 
+                btn_exportar = ctk.CTkButton(frame_botoes, text="💾 Exportar", width=130, 
                                              command=lambda res=item['caminho_resultado_imutavel'], rid=item['id']: self.exportar_do_historico(res, rid))
                 btn_exportar.pack(side="left", padx=5)
 
@@ -470,7 +502,8 @@ class BuscadorApp(ctk.CTk):
             messagebox.showerror("Erro", "Arquivo imutável não encontrado no cofre do sistema.")
             return
 
-        nome_sugerido = f"Recuperacao_Historico.xlsx"
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        nome_sugerido = f"Recuperacao_Historico_{timestamp}.xlsx"
         caminho_salvar = filedialog.asksaveasfilename(defaultextension=".xlsx", initialfile=nome_sugerido, filetypes=[("Excel", "*.xlsx")])
         if caminho_salvar:
             try:
