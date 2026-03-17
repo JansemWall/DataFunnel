@@ -61,15 +61,21 @@ Com essas informacoes, o atendimento fica mais rapido e assertivo.
 
 ## Stack
 
-- Python 3.13+
+- Python 3.11+ (recomendado 3.11 para build mais estavel com PyInstaller)
 - CustomTkinter
 - Pandas
 - OpenPyXL
 
 ## Estrutura do projeto
 
-- app.py: aplicacao principal (interface + processamento)
-- app.spec: configuracao de build com PyInstaller
+- main.py: ponto de entrada principal da aplicacao
+- app.py: bootstrap de compatibilidade que chama main.py
+- interface.py: interface grafica (CustomTkinter)
+- motor_dados.py: regras de processamento e exportacao de dados
+- atualizador.py: verificacao e aplicacao de atualizacao
+- config.py: configuracoes e caminhos do sistema
+- app.spec: configuracao de build com PyInstaller (arquivo recomendado)
+- main.spec: arquivo legado/opcional (evite usar em paralelo com app.spec)
 - _dados_sistema/origens: copias imutaveis das bases importadas
 - _dados_sistema/resultados: resultados filtrados em CSV
 - _dados_sistema/historico.json: historico de execucoes e exportacoes
@@ -81,7 +87,16 @@ Com essas informacoes, o atendimento fica mais rapido e assertivo.
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install customtkinter pandas openpyxl
-python app.py
+python main.py
+```
+
+Opcional com uv:
+
+```powershell
+uv venv --python 3.11 .venv
+.\.venv\Scripts\Activate.ps1
+uv pip install customtkinter pandas openpyxl pyinstaller
+python main.py
 ```
 
 ## Notas de implementacao
@@ -94,5 +109,10 @@ python app.py
 
 ```powershell
 pip install pyinstaller
-pyinstaller app.spec
+pyinstaller app.spec --clean
 ```
+
+## Atualizacao automatica
+
+- A verificacao automatica de versao pode ser ligada/desligada em config.py.
+- Para lancamento imediato sem popup de update, mantenha VERIFICAR_ATUALIZACAO_AUTOMATICA = False.

@@ -114,7 +114,6 @@ def baixar_e_aplicar_update(url_download: str) -> None:
     with open(caminho_bat, "w", encoding="utf-8") as arquivo:
         arquivo.write(conteudo_bat)
 
-    # A GRANDE MÁGICA: Varredura total das variáveis do PyInstaller
     env_limpo = os.environ.copy()
     chaves_para_remover = [k for k in env_limpo.keys() if k.upper().startswith("_MEI")]
     for k in chaves_para_remover:
