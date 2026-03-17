@@ -9,7 +9,7 @@ from tkinter import filedialog, messagebox
 
 import motor_dados
 from atualizador import baixar_e_aplicar_update, verificar_nova_versao
-from config import VERSAO_ATUAL, inicializar_sistema
+from config import VERSAO_ATUAL, VERIFICAR_ATUALIZACAO_AUTOMATICA, inicializar_sistema
 
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("blue")
@@ -48,7 +48,7 @@ class BuscadorApp(ctk.CTk):
         self.tabview.configure(command=self.ao_mudar_aba)
         self.protocol("WM_DELETE_WINDOW", self.ao_fechar_aplicacao)
 
-        if getattr(sys, "frozen", False):
+        if getattr(sys, "frozen", False) and VERIFICAR_ATUALIZACAO_AUTOMATICA:
             self.after(2000, self.verificar_atualizacoes)
 
     def verificar_atualizacoes(self) -> None:

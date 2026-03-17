@@ -4,6 +4,7 @@ from typing import Any
 
 VERSAO_ATUAL = "1.0.0"
 URL_VERSAO_NUVEM = "https://raw.githubusercontent.com/JansemWall/Filtro-de-Planilha-Avan-ado/main/version.json"
+VERIFICAR_ATUALIZACAO_AUTOMATICA = False
 
 PASTA_SISTEMA = "_dados_sistema"
 PASTA_ORIGENS = os.path.join(PASTA_SISTEMA, "origens")

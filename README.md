@@ -1,4 +1,4 @@
-# ExcellKiller
+# Filtradorzera de planilhas
 
 O ExcellKiller foi criado para acelerar a busca de informacoes em planilhas grandes, com uma operacao simples e foco em produtividade.
 
