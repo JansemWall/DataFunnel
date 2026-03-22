@@ -9,12 +9,13 @@ VERIFICAR_ATUALIZACAO_AUTOMATICA = False
 PASTA_SISTEMA = "_dados_sistema"
 PASTA_ORIGENS = os.path.join(PASTA_SISTEMA, "origens")
 PASTA_RESULTADOS = os.path.join(PASTA_SISTEMA, "resultados")
+PASTA_COLUNAS_CACHE = os.path.join(PASTA_SISTEMA, "colunas_cache")
 ARQUIVO_HISTORICO = os.path.join(PASTA_SISTEMA, "historico.json")
 ARQUIVO_BASES = os.path.join(PASTA_SISTEMA, "bases.json")
 
 
 def inicializar_sistema() -> None:
-    for pasta in [PASTA_SISTEMA, PASTA_ORIGENS, PASTA_RESULTADOS]:
+    for pasta in [PASTA_SISTEMA, PASTA_ORIGENS, PASTA_RESULTADOS, PASTA_COLUNAS_CACHE]:
         if not os.path.exists(pasta):
             os.makedirs(pasta)
 

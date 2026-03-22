@@ -12,6 +12,7 @@ from config import (
     ARQUIVO_HISTORICO,
     PASTA_ORIGENS,
     PASTA_RESULTADOS,
+    PASTA_COLUNAS_CACHE,
     carregar_json,
     salvar_json,
 )
@@ -58,6 +59,7 @@ def preparar_base(
         nome_original = os.path.basename(caminho_origem_imutavel)
         if status_callback:
             status_callback("Lendo base do cache local...")
+        salvar_colunas_cache(caminho_origem_imutavel, nome_original)
         return caminho_origem_imutavel, nome_original, True, bases_salvas
 
     nome_original = os.path.basename(caminho_base_ativa)
@@ -74,7 +76,9 @@ def preparar_base(
             status_callback("Armazenando CSV no cofre...")
         shutil.copy2(caminho_base_ativa, caminho_origem_imutavel)
 
-    bases_salvas, _ = salvar_nova_base(bases_salvas, nome_original, caminho_origem_imutavel)
+    bases_salvas, base_nome = salvar_nova_base(bases_salvas, nome_original, caminho_origem_imutavel)
+
+    salvar_colunas_cache(caminho_origem_imutavel, base_nome)
     return caminho_origem_imutavel, nome_original, True, bases_salvas
 
 def _iterador_csv(caminho_origem_imutavel: str, tamanho_lote: int):
@@ -104,6 +108,37 @@ def _total_linhas_csv(caminho_origem_imutavel: str) -> int:
     with open(caminho_origem_imutavel, "rb") as arquivo:
         total_linhas = sum(1 for _ in arquivo)
     return max(total_linhas - 1, 0)
+
+def salvar_colunas_cache(caminho_csv: str, base_nome: str) -> None:
+    """Salva as colunas do CSV em um arquivo JSON para autocomplete."""
+    try:
+        colunas = list(_cabecalho_csv(caminho_csv))
+        nome_hash = os.path.splitext(os.path.basename(caminho_csv))[0]
+        caminho_cache = os.path.join(PASTA_COLUNAS_CACHE, f"{nome_hash}_colunas.json")
+        
+        dados_cache = {
+            "base_nome": base_nome,
+            "caminho_origem": caminho_csv,
+            "colunas": colunas,
+            "timestamp": datetime.now().isoformat()
+        }
+        salvar_json(caminho_cache, dados_cache)
+    except Exception as e:
+        print(f"Erro ao salvar cache de colunas: {e}")
+
+def carregar_colunas_cache(caminho_csv: str) -> list[str]:
+    """Carrega as colunas em cache de um CSV."""
+    try:
+        nome_hash = os.path.splitext(os.path.basename(caminho_csv))[0]
+        caminho_cache = os.path.join(PASTA_COLUNAS_CACHE, f"{nome_hash}_colunas.json")
+        
+        if os.path.exists(caminho_cache):
+            dados = carregar_json(caminho_cache, {})
+            return dados.get("colunas", [])
+        
+        return list(_cabecalho_csv(caminho_csv))
+    except Exception:
+        return []
 
 def filtrar_em_lotes(
     caminho_origem_imutavel: str,

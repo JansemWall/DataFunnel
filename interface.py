@@ -17,6 +17,218 @@ ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("blue")
 
 
+class EntradaColunaAutocomplete(ctk.CTkFrame):
+    def __init__(self, parent, colunas_disponiveis=None, comando_foco_proximo=None, **kwargs):
+        super().__init__(parent, **kwargs)
+        
+        self.colunas_disponiveis = colunas_disponiveis or []
+        self.comando_foco_proximo = comando_foco_proximo
+        self.popup_lista = None
+        
+        self.textbox = ctk.CTkTextbox(self, height=70, wrap="word")
+        self.textbox.pack(fill="x", expand=True)
+        
+        self.frame_sugestoes = ctk.CTkFrame(self, height=0, fg_color="transparent")
+        self.frame_sugestoes.pack(fill="x", padx=0, pady=0)
+        self.frame_sugestoes.pack_forget()
+        
+        cor_fundo_sugestoes = "#f9f9f9" if ctk.get_appearance_mode() == "Light" else "#2b2b2b"
+        self.listbox_sugestoes = ctk.CTkTextbox(self.frame_sugestoes, height=150, wrap="none", fg_color=cor_fundo_sugestoes)
+        self.listbox_sugestoes.pack(fill="both", expand=True, padx=2, pady=2)
+        self.listbox_sugestoes.configure(state="disabled")
+        
+        bg_badge = "#d4edda" if ctk.get_appearance_mode() == "Light" else "#1a3b2a"
+        fg_badge = "#1b5e20" if ctk.get_appearance_mode() == "Light" else "#2ecc71"
+        self.textbox.tag_config("badge_valido", background=bg_badge, foreground=fg_badge)
+        
+        self.textbox.bind("<KeyRelease>", self._ao_digitar)
+        self.textbox.bind("<Tab>", self._ao_tab)
+        self.textbox.bind("<Escape>", self._ocultar_sugestoes)
+        self.textbox.bind("<Up>", self._ao_arrow_up)
+        self.textbox.bind("<Down>", self._ao_arrow_down)
+        self.listbox_sugestoes._textbox.bind("<ButtonRelease-1>", self._ao_clicar_sugestao)
+        
+        self._sugestoes_atuais = []
+        self._indice_selecionado = -1
+    
+    def _obter_palavra_atual(self) -> tuple[str, int, int]:
+        conteudo = self.textbox.get("1.0", "end-1c")
+        cursor_pos = self.textbox.index("insert")
+        linha, coluna = map(int, cursor_pos.split("."))
+        
+        linhas = conteudo.split("\n")
+        if linha > len(linhas):
+            return "", 0, coluna
+        
+        linha_texto = linhas[linha - 1]
+        
+        inicio = coluna - 1
+        while inicio >= 0 and linha_texto[inicio] not in (',', ' '):
+            inicio -= 1
+        
+        inicio = max(0, inicio + 1 if inicio >= 0 and linha_texto[inicio] in (',', ' ') else inicio)
+        palavra = linha_texto[inicio:coluna].strip()
+        return palavra, linha, coluna
+    
+    def _obter_colunas_matches(self, termo: str) -> list[str]:
+        if not termo:
+            return []
+        termo_lower = termo.lower()
+        matches = [col for col in self.colunas_disponiveis if termo_lower in col.lower()]
+        return matches[:10]
+    
+    def _atualizar_badges(self):
+        self.textbox.tag_remove("badge_valido", "1.0", "end")
+        texto = self.textbox.get("1.0", "end-1c")
+        if not texto.strip() or not self.colunas_disponiveis:
+            return
+
+        colunas_validas = {c.lower() for c in self.colunas_disponiveis}
+        
+        linhas = texto.split('\n')
+        for i, linha in enumerate(linhas):
+            num_linha = i + 1
+            partes = linha.split(',')
+            col_atual = 0
+            for parte in partes:
+                termo = parte.strip()
+                if termo and termo.lower() in colunas_validas:
+                    inicio_termo = col_atual + parte.find(termo)
+                    fim_termo = inicio_termo + len(termo)
+                    
+                    idx_inicio = f"{num_linha}.{inicio_termo}"
+                    idx_fim = f"{num_linha}.{fim_termo}"
+                    self.textbox.tag_add("badge_valido", idx_inicio, idx_fim)
+                col_atual += len(parte) + 1
+    
+    def _ao_digitar(self, event=None):
+        if event and event.keysym in ("Tab", "Up", "Down", "Return", "Escape", "Shift_L", "Shift_R"):
+            return
+            
+        self._atualizar_badges()
+        
+        palavra, _, _ = self._obter_palavra_atual()
+        if len(palavra) > 0:
+            self._sugestoes_atuais = self._obter_colunas_matches(palavra)
+            self._indice_selecionado = -1
+            
+            if self._sugestoes_atuais:
+                self._mostrar_sugestoes()
+            else:
+                self._ocultar_sugestoes()
+        else:
+            self._ocultar_sugestoes()
+    
+    def _mostrar_sugestoes(self):
+        self.listbox_sugestoes.configure(state="normal")
+        self.listbox_sugestoes.delete("1.0", "end")
+        
+        palavra, _, _ = self._obter_palavra_atual()
+        for i, sugestao in enumerate(self._sugestoes_atuais):
+            eh_match_exato = sugestao.lower() == palavra.lower() if palavra else False
+            badge = " ✓" if eh_match_exato else ""
+            prefixo = "➜ " if i == self._indice_selecionado else "  "
+            
+            self.listbox_sugestoes.insert("end", f"{prefixo}{sugestao}{badge}\n")
+            
+        self.listbox_sugestoes.configure(state="disabled")
+        
+        qtd_itens = len(self._sugestoes_atuais)
+        altura_ideal = min(qtd_itens * 28 + 6, 150)
+        
+        self.frame_sugestoes.configure(height=altura_ideal)
+        self.frame_sugestoes.pack_propagate(False)
+        self.frame_sugestoes.pack(fill="x", padx=0, pady=(2, 0))
+    
+    def _ocultar_sugestoes(self, event=None):
+        self.frame_sugestoes.pack_forget()
+        return "break"
+    
+    def _ao_tab(self, event):
+        if self.frame_sugestoes.winfo_ismapped() and self._sugestoes_atuais:
+            if self._indice_selecionado >= 0:
+                self._inserir_sugestao(self._sugestoes_atuais[self._indice_selecionado])
+            else:
+                self._inserir_sugestao(self._sugestoes_atuais[0])
+            return "break"
+        elif self.comando_foco_proximo:
+            return self.comando_foco_proximo(event)
+    
+    def _ao_arrow_down(self, event):
+        if self._sugestoes_atuais:
+            self._indice_selecionado = (self._indice_selecionado + 1) % len(self._sugestoes_atuais)
+            self._mostrar_sugestoes()
+            return "break"
+    
+    def _ao_arrow_up(self, event):
+        if self._sugestoes_atuais:
+            self._indice_selecionado = (self._indice_selecionado - 1) % len(self._sugestoes_atuais)
+            self._mostrar_sugestoes()
+            return "break"
+            
+    def _ao_clicar_sugestao(self, event):
+        try:
+            widget_tk = self.listbox_sugestoes._textbox
+            indice_str = widget_tk.index(f"@{event.x},{event.y}")
+            linha_clicada = int(indice_str.split('.')[0])
+            
+            texto_linha = self.listbox_sugestoes.get(f"{linha_clicada}.0", f"{linha_clicada}.end").strip()
+            sugestao = texto_linha.replace("✓", "").replace("➜", "").strip()
+            
+            if sugestao:
+                self._inserir_sugestao(sugestao)
+        except Exception:
+            pass
+    
+    def _inserir_sugestao(self, sugestao: str):
+        palavra, linha, coluna = self._obter_palavra_atual()
+        conteudo = self.textbox.get("1.0", "end-1c")
+        
+        inicio = max(0, coluna - len(palavra))
+        linhas = conteudo.split("\n")
+        linha_idx = linha - 1
+        linha_texto = linhas[linha_idx] if linha_idx < len(linhas) else ""
+        
+        before = linha_texto[:inicio]
+        after = linha_texto[coluna:]
+        
+        if not after.strip().startswith(","):
+            novo_texto = before + sugestao + ", " + after
+            offset_cursor = len(sugestao) + 2
+        else:
+            novo_texto = before + sugestao + after
+            offset_cursor = len(sugestao)
+            
+        linhas[linha_idx] = novo_texto
+        
+        self.textbox.delete("1.0", "end")
+        self.textbox.insert("1.0", "\n".join(linhas))
+        self.textbox.mark_set("insert", f"{linha}.{inicio + offset_cursor}")
+        
+        self._ocultar_sugestoes()
+        self._atualizar_badges()
+    
+    def atualizar_colunas(self, colunas: list[str]):
+        self.colunas_disponiveis = colunas or []
+        self._atualizar_badges()
+    
+    def get(self, *args):
+        return self.textbox.get(*args)
+    
+    def insert(self, *args):
+        ret = self.textbox.insert(*args)
+        self._atualizar_badges()
+        return ret
+    
+    def delete(self, *args):
+        ret = self.textbox.delete(*args)
+        self._atualizar_badges()
+        return ret
+    
+    def bind(self, *args):
+        return self.textbox.bind(*args)
+
+
 class BuscadorApp(ctk.CTk):
     def __init__(self) -> None:
         super().__init__()
@@ -25,6 +237,7 @@ class BuscadorApp(ctk.CTk):
 
         self.caminho_base_ativa = ""
         self.is_base_no_cofre = False
+        self.colunas_base_atual = [] 
         self.filtros_widgets = []
         self.stop_event = threading.Event()
         self.thread_processamento = None
@@ -362,6 +575,7 @@ class BuscadorApp(ctk.CTk):
                 nome = os.path.basename(caminho)
                 self.label_arquivo.configure(text=f"Arquivo externo selecionado: {nome}", text_color="#f39c12")
                 self.combo_bases.set("Arquivo Externo Selecionado")
+                self._carregar_colunas_base()
                 self._atualizar_acoes_base_selecionada()
             else:
                 self.combo_bases.set("Selecione uma base...")
@@ -370,7 +584,23 @@ class BuscadorApp(ctk.CTk):
             self.caminho_base_ativa = self.bases_salvas[escolha]
             self.is_base_no_cofre = True
             self.label_arquivo.configure(text=f"Base carregada do cache local: {escolha}", text_color="#2ecc71")
+            self._carregar_colunas_base()
             self._atualizar_acoes_base_selecionada()
+    
+    def _carregar_colunas_base(self) -> None:
+        if not self.caminho_base_ativa:
+            self.colunas_base_atual = []
+            return
+        
+        try:
+            self.colunas_base_atual = motor_dados.carregar_colunas_cache(self.caminho_base_ativa)
+            for filtro in self.filtros_widgets:
+                entrada_coluna = filtro.get("entry_coluna")
+                if entrada_coluna and hasattr(entrada_coluna, 'atualizar_colunas'):
+                    entrada_coluna.atualizar_colunas(self.colunas_base_atual)
+        except Exception as e:
+            print(f"Erro ao carregar colunas: {e}")
+            self.colunas_base_atual = []
 
     def _esconder_acoes_base(self) -> None:
         self.btn_converter_sem_filtro.pack_forget()
@@ -882,6 +1112,7 @@ class BuscadorApp(ctk.CTk):
         self.label_arquivo.configure(text=f"Base convertida para CSV e carregada: {base_nome}", text_color="#2ecc71")
         self._atualizar_grade_chunks(self.total_chunks_conversao, self.total_chunks_conversao)
         self._ocultar_popup_conversao()
+        self._carregar_colunas_base()
         self._atualizar_acoes_base_selecionada()
 
     def _finalizar_conversao_cancelada(self) -> None:
@@ -1051,20 +1282,24 @@ class BuscadorApp(ctk.CTk):
         frame_col = ctk.CTkFrame(frame_inputs, fg_color="transparent")
         frame_col.pack(side="left", fill="both", expand=True, padx=(5, 10))
         ctk.CTkLabel(frame_col, text="Na(s) coluna(s) (ex.: Nome, Cargo):").pack(anchor="w")
-        entry_col = ctk.CTkTextbox(frame_col, height=70, wrap="word")
+        
+        entry_col = EntradaColunaAutocomplete(
+            frame_col,
+            colunas_disponiveis=self.colunas_base_atual,
+            fg_color="transparent",
+            comando_foco_proximo=self._ao_tab_campo_filtro
+        )
         entry_col.pack(fill="x")
-        entry_col.bind("<Tab>", self._ao_tab_campo_filtro)
-        entry_col.bind("<Shift-Tab>", self._ao_shift_tab_campo_filtro)
-        entry_col.bind("<Shift-KeyPress-Tab>", self._ao_shift_tab_campo_filtro)
+        entry_col.textbox.bind("<Shift-Tab>", self._ao_shift_tab_campo_filtro)
 
         frame_term = ctk.CTkFrame(frame_inputs, fg_color="transparent")
         frame_term.pack(side="right", fill="both", expand=True, padx=(0, 5))
         ctk.CTkLabel(frame_term, text="Procurar termo(s) (cole a lista aqui):").pack(anchor="w")
         entry_term = ctk.CTkTextbox(frame_term, height=70, wrap="word")
         entry_term.pack(fill="x")
+        
         entry_term.bind("<Tab>", self._ao_tab_campo_filtro)
         entry_term.bind("<Shift-Tab>", self._ao_shift_tab_campo_filtro)
-        entry_term.bind("<Shift-KeyPress-Tab>", self._ao_shift_tab_campo_filtro)
 
         novo_widget = {
             "frame_container": linha_frame_container,
@@ -1081,10 +1316,12 @@ class BuscadorApp(ctk.CTk):
             entry_coluna = filtro.get("entry_coluna")
             entry_termos = filtro.get("entry_termos")
             if entry_coluna and entry_coluna.winfo_exists():
-                widget_coluna = getattr(entry_coluna, "_textbox", entry_coluna)
+                widget_coluna = getattr(entry_coluna, "textbox", entry_coluna)
                 campos.append(widget_coluna)
             if entry_termos and entry_termos.winfo_exists():
                 widget_termos = getattr(entry_termos, "_textbox", entry_termos)
+                if not widget_termos:
+                    widget_termos = entry_termos
                 campos.append(widget_termos)
         return campos
 
@@ -1104,12 +1341,14 @@ class BuscadorApp(ctk.CTk):
         proximo_indice = (indice_atual + direcao) % len(campos)
         campos[proximo_indice].focus_set()
 
-    def _ao_tab_campo_filtro(self, event) -> str:
-        self._mover_foco_entre_campos(event.widget, 1)
+    def _ao_tab_campo_filtro(self, event=None) -> str:
+        if event and hasattr(event, "widget"):
+            self._mover_foco_entre_campos(event.widget, 1)
         return "break"
 
-    def _ao_shift_tab_campo_filtro(self, event) -> str:
-        self._mover_foco_entre_campos(event.widget, -1)
+    def _ao_shift_tab_campo_filtro(self, event=None) -> str:
+        if event and hasattr(event, "widget"):
+            self._mover_foco_entre_campos(event.widget, -1)
         return "break"
 
     def _cancelar_limpeza_status_agendada(self) -> None:
