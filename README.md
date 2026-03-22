@@ -1,118 +1,40 @@
-# Filtradorzera de planilhas
+# DataFunnel (Filtro e Conversor Avançado de Dados)
 
-O ExcellKiller foi criado para acelerar a busca de informacoes em planilhas grandes, com uma operacao simples e foco em produtividade.
+O **DataFunnel** é uma aplicação desktop de alta performance desenvolvida para resolver um dos maiores gargalos da manipulação de dados: lidar com planilhas gigantescas sem travar o computador. 
 
-## Para que serve
+Originalmente criado como um poderoso mecanismo de busca recursiva (filtros em funil), o sistema evoluiu e agora também oferece a opção de **conversão direta e otimizada de arquivos Excel pesados para CSV**.
 
-- Encontrar rapidamente registros em arquivos CSV e Excel
-- Aplicar filtros por colunas e termos de busca
-- Reduzir trabalho manual de procurar linha por linha
-- Gerar planilhas finais prontas para compartilhamento
+## Principais Funcionalidades
 
-## Beneficios para sua equipe
+* **Filtros em Funil (Drill-down):** Aplique múltiplas regras de busca em sequência (lógica AND) ou pesquise vários termos na mesma regra (lógica OR). O limite é a sua necessidade.
+* **Conversão Direta (Excel para CSV):** Extraia dados de arquivos `.xlsx` pesados de forma rápida e segura para o formato universal `.csv`.
+* **Histórico e Reutilização:** O sistema memoriza suas buscas. Com um clique, você pode recarregar as regras exatas de uma pesquisa feita dias atrás e exportar novamente os resultados.
+* **Auto-Update Nativo:** O sistema verifica atualizações via GitHub e se auto-atualiza de forma transparente e silenciosa.
 
-- Menos tempo gasto com consultas repetitivas
-- Mais padrao no processo de filtragem
-- Historico de pesquisas para reutilizacao
-- Reexportacao facil de resultados anteriores
+## O Grande Diferencial: Engenharia e Otimização
 
-## Como usar (passo a passo)
+O que torna o DataFunnel especial não é apenas o que ele faz, mas **como** ele faz. O sistema foi desenhado visando o mínimo consumo de hardware e a máxima produtividade:
 
-1. Abra o sistema.
-2. Selecione a base de dados (CSV, XLSX ou XLS).
-3. Informe as regras de busca:
-  - Colunas onde deseja procurar
-  - Termos que devem ser encontrados
-4. Clique em Pesquisar e Gerar Resultado.
-5. Escolha onde salvar o arquivo final em Excel.
-6. Consulte a aba Historico de Resultados para:
-  - Exportar novamente
-  - Abrir planilhas ja exportadas
+* **Processamento em Chunks (Lotes):** Em vez de tentar carregar uma planilha de 1 milhão de linhas na memória RAM (o que causaria travamentos), o motor de dados lê e processa o arquivo em lotes (ex: 50.000 linhas por vez). Isso mantém o uso de memória baixíssimo e constante, não importa o tamanho do arquivo.
+* **Arquitetura Multithreading:** A interface gráfica (UI) e o motor de dados rodam em pistas separadas. O processamento pesado acontece em *background*, garantindo que a tela nunca congele e permitindo o cancelamento de tarefas a qualquer momento.
+* **Cofre de Dados (Cache Inteligente):** Ler arquivos Excel é um processo naturalmente lento. Para resolver isso, ao carregar um `.xlsx` pela primeira vez, o sistema cria uma cópia imutável em `.csv` no "Cofre do Sistema". Nas consultas seguintes, a base é carregada de forma quase instantânea.
+* **Gestão de Resultados:** Todos os resultados filtrados são preservados fisicamente. Isso poupa o usuário de ter que rodar algoritmos pesados novamente caso precise apenas re-exportar uma base para um colega.
 
-## Regras de busca
+## Tecnologias Utilizadas
 
-- Voce pode adicionar varias regras na mesma pesquisa.
-- Os termos podem ser colados em bloco (com virgula, ponto e virgula ou quebra de linha).
-- O sistema aplica as regras em funil para chegar no resultado final.
+* **Python 3**
+* **Pandas:** Motor principal para manipulação de DataFrames e leitura otimizada.
+* **CustomTkinter:** Para uma interface gráfica moderna, responsiva e com suporte a *Dark Mode*.
+* **Urllib / Subprocess:** Gerenciamento nativo de rede e do sistema operacional para o fluxo de auto-atualização.
 
-## Historico e rastreabilidade
+## Download
 
-- Cada pesquisa fica registrada com data, base utilizada, regras aplicadas e quantidade de linhas encontradas.
-- Quando voce exporta novamente um resultado, o caminho do novo arquivo fica salvo no historico.
-- Se o arquivo for movido ou excluido, o botao Abrir Planilha deixa de aparecer automaticamente.
+O DataFunnel é distribuído como um arquivo executável `.exe` para Windows. Você pode baixá-lo diretamente do nosso repositório no GitHub:
+[DataFunnel no GitHub](https://github.com/JansemWall/Filtro-de-Planilha-Avan-ado/releases)
 
-## Requisitos
+## Como Usar (Para Desenvolvedores)
 
-- Sistema operacional Windows
-- Microsoft Excel ou aplicativo compativel para abrir arquivos .xlsx
-
-## Suporte
-
-Em caso de erro ou duvida de uso, compartilhe:
-
-- Captura de tela da mensagem apresentada
-- Passos realizados antes do erro
-- Nome do arquivo/base utilizada
-
-Com essas informacoes, o atendimento fica mais rapido e assertivo.
-
----
-
-
-## Stack
-
-- Python 3.11+ (recomendado 3.11 para build mais estavel com PyInstaller)
-- CustomTkinter
-- Pandas
-- OpenPyXL
-
-## Estrutura do projeto
-
-- main.py: ponto de entrada principal da aplicacao
-- app.py: bootstrap de compatibilidade que chama main.py
-- interface.py: interface grafica (CustomTkinter)
-- motor_dados.py: regras de processamento e exportacao de dados
-- atualizador.py: verificacao e aplicacao de atualizacao
-- config.py: configuracoes e caminhos do sistema
-- app.spec: configuracao de build com PyInstaller (arquivo recomendado)
-- main.spec: arquivo legado/opcional (evite usar em paralelo com app.spec)
-- _dados_sistema/origens: copias imutaveis das bases importadas
-- _dados_sistema/resultados: resultados filtrados em CSV
-- _dados_sistema/historico.json: historico de execucoes e exportacoes
-- _dados_sistema/bases.json: mapeamento de bases salvas
-
-## Setup rapido (Windows / PowerShell)
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install customtkinter pandas openpyxl
-python main.py
-```
-
-Opcional com uv:
-
-```powershell
-uv venv --python 3.11 .venv
-.\.venv\Scripts\Activate.ps1
-uv pip install customtkinter pandas openpyxl pyinstaller
-python main.py
-```
-
-## Notas de implementacao
-
-- Processamento em chunks para reduzir consumo de memoria em arquivos grandes.
-- Exportacao e reexportacao atualizam caminho de arquivo no historico.
-- Se a abertura da planilha falhar, o caminho salvo e limpo para ocultar automaticamente a opcao de abrir.
-
-## Build executavel (opcional)
-
-```powershell
-pip install pyinstaller
-pyinstaller app.spec --clean
-```
-
-## Atualizacao automatica
-
-- A verificacao automatica de versao pode ser ligada/desligada em config.py.
-- Para lancamento imediato sem popup de update, mantenha VERIFICAR_ATUALIZACAO_AUTOMATICA = False.
+1. Clone o repositório.
+2. Instale as dependências:
+   ```bash
+   pip install pandas customtkinter openpyxl
